@@ -210,22 +210,35 @@ def mpd_client():
     # Wir versuchen zu pingen, um zu sehen, ob die Verbindung noch steht
     try:
         mpdc.ping()
-    except (mpd.ConnectionError, BrokenPipeError):
+        # Wenn der Ping klappt, loggen wir nichts (alles ok)
+    except (mpd.ConnectionError, BrokenPipeError, Exception):
+        print("OLED-Service: Verbindung verloren oder noch nicht aufgebaut. Verbinde neu...")
         try:
-            mpdc.connect(config["MPD"]["host"], int(config["MPD"]["port"]))
-        except Exception as e:
-            print(f"Verbindungsfehler: {e}")
-            return None  # Falls MPD gar nicht erreichbar ist
+            try:
+                mpdc.disconnect()
+            except:
+                pass
 
-    # {'volume': '30', 'repeat': '0', 'random': '0', 'single': '0', 'consume': '0', 'partition': 'default', 'playlist': '12', 'playlistlength': '5', 'mixrampdb': '0.000000', 'state': 'play', 'song': '0', 'songid': '56',
-    # 'time': '26:79', 'elapsed': '26.377', 'bitrate': '320', 'duration': '78.968', 'audio': '44100:24:2', 'nextsong': '1', 'nextsongid': '57'}
-    # of those, volume, playlistlength, state (play, pause, stop), song (currently playing song in list, starts with 0), elapsed and duration are of interest.
-    status = mpdc.status()
-    # {'file': 'Kinderlieder/Kinderlieder Klassiker/1/Track.05.mp3', 'last-modified': '2021-11-07T09:51:56Z', 'time': '87', 'duration': '87.222', 'pos': '4', 'id': '60'}
-    # {'file': 'Musik/2008 For Emma, Forever Ago (L)/01. Flume.mp3', 'last-modified': '2013-07-02T12:56:55Z', 'time': '219', 'duration': '219.062', 'pos': '0', 'id': '61',
-    # 'artist': 'Bon Iver', 'title': 'Flume', 'album': 'For Emma, Forever Ago', 'track': '1', 'date': '2008', 'genre': 'Folk-rock, Indie folk'}
-    # first row is always present. all in all file, artist, title, album are of interest.
-    song = mpdc.currentsong()
+            mpdc.connect(config["MPD"]["host"], int(config["MPD"]["port"]))
+            print(f"OLED-Service: Erfolgreich mit MPD verbunden unter {config['MPD']['host']}")
+        except Exception as e:
+            print(f"OLED-Service: Verbindungsfehler: {e}")
+            return None
+
+    try:
+        # {'volume': '30', 'repeat': '0', 'random': '0', 'single': '0', 'consume': '0', 'partition': 'default', 'playlist': '12', 'playlistlength': '5', 'mixrampdb': '0.000000', 'state': 'play', 'song': '0', 'songid': '56',
+        # 'time': '26:79', 'elapsed': '26.377', 'bitrate': '320', 'duration': '78.968', 'audio': '44100:24:2', 'nextsong': '1', 'nextsongid': '57'}
+        # of those, volume, playlistlength, state (play, pause, stop), song (currently playing song in list, starts with 0), elapsed and duration are of interest.
+        status = mpdc.status()
+        # {'file': 'Kinderlieder/Kinderlieder Klassiker/1/Track.05.mp3', 'last-modified': '2021-11-07T09:51:56Z', 'time': '87', 'duration': '87.222', 'pos': '4', 'id': '60'}
+        # {'file': 'Musik/2008 For Emma, Forever Ago (L)/01. Flume.mp3', 'last-modified': '2013-07-02T12:56:55Z', 'time': '219', 'duration': '219.062', 'pos': '0', 'id': '61',
+        # 'artist': 'Bon Iver', 'title': 'Flume', 'album': 'For Emma, Forever Ago', 'track': '1', 'date': '2008', 'genre': 'Folk-rock, Indie folk'}
+        # first row is always present. all in all file, artist, title, album are of interest.
+        song = mpdc.currentsong()
+    except Exception as e:
+        print(f"OLED-Service: Fehler beim Abrufen der Daten: {e}")
+        return None
+
 #    mpdc.close()
 #    mpdc.disconnect()
 
