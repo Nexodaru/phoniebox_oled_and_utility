@@ -207,24 +207,27 @@ def mpd_get_track_time_percent(data, alt_data):
 
 
 def mpd_client():
-    # Wir versuchen zu pingen, um zu sehen, ob die Verbindung noch steht
+    global mpdc
+
     try:
         mpdc.ping()
-        # Wenn der Ping klappt, loggen wir nichts (alles ok)
-    except (mpd.ConnectionError, BrokenPipeError, Exception):
-        print("OLED-Service: Verbindung verloren oder noch nicht aufgebaut. Verbinde neu...")
+    except Exception as e:
+        print(f"OLED-Service: Ping-Fehler ({type(e).__name__}): {e}")
         try:
             try:
                 mpdc.disconnect()
             except:
                 pass
 
+            # Neu verbinden
             mpdc.connect(config["MPD"]["host"], int(config["MPD"]["port"]))
-            print(f"OLED-Service: Erfolgreich mit MPD verbunden unter {config['MPD']['host']}")
-        except Exception as e:
-            print(f"OLED-Service: Verbindungsfehler: {e}")
+            print("OLED-Service: Verbindung erfolgreich wiederhergestellt.")
+        except Exception as re_e:
+            # Falls auch der Reconnect scheitert, loggen wir das Detail
+            print(f"OLED-Service: Reconnect fehlgeschlagen ({type(re_e).__name__}): {re_e}")
             return None
 
+    # 2. Daten abrufen
     try:
         # {'volume': '30', 'repeat': '0', 'random': '0', 'single': '0', 'consume': '0', 'partition': 'default', 'playlist': '12', 'playlistlength': '5', 'mixrampdb': '0.000000', 'state': 'play', 'song': '0', 'songid': '56',
         # 'time': '26:79', 'elapsed': '26.377', 'bitrate': '320', 'duration': '78.968', 'audio': '44100:24:2', 'nextsong': '1', 'nextsongid': '57'}
@@ -239,8 +242,8 @@ def mpd_client():
         print(f"OLED-Service: Fehler beim Abrufen der Daten: {e}")
         return None
 
-#    mpdc.close()
-#    mpdc.disconnect()
+    #    mpdc.close()
+    #    mpdc.disconnect()
 
     alt_data = mpd_get_alt_data(song)
     return {
