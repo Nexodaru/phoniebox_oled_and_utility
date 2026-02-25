@@ -207,7 +207,16 @@ def mpd_get_track_time_percent(data, alt_data):
 
 
 def mpd_client():
-    mpdc.connect(config["MPD"]["host"], int(config["MPD"]["port"]))
+    # Wir versuchen zu pingen, um zu sehen, ob die Verbindung noch steht
+    try:
+        mpdc.ping()
+    except (mpd.ConnectionError, BrokenPipeError):
+        try:
+            mpdc.connect(config["MPD"]["host"], int(config["MPD"]["port"]))
+        except Exception as e:
+            print(f"Verbindungsfehler: {e}")
+            return None  # Falls MPD gar nicht erreichbar ist
+
     # {'volume': '30', 'repeat': '0', 'random': '0', 'single': '0', 'consume': '0', 'partition': 'default', 'playlist': '12', 'playlistlength': '5', 'mixrampdb': '0.000000', 'state': 'play', 'song': '0', 'songid': '56',
     # 'time': '26:79', 'elapsed': '26.377', 'bitrate': '320', 'duration': '78.968', 'audio': '44100:24:2', 'nextsong': '1', 'nextsongid': '57'}
     # of those, volume, playlistlength, state (play, pause, stop), song (currently playing song in list, starts with 0), elapsed and duration are of interest.
@@ -217,8 +226,8 @@ def mpd_client():
     # 'artist': 'Bon Iver', 'title': 'Flume', 'album': 'For Emma, Forever Ago', 'track': '1', 'date': '2008', 'genre': 'Folk-rock, Indie folk'}
     # first row is always present. all in all file, artist, title, album are of interest.
     song = mpdc.currentsong()
-    mpdc.close()
-    mpdc.disconnect()
+#    mpdc.close()
+#    mpdc.disconnect()
 
     alt_data = mpd_get_alt_data(song)
     return {
@@ -353,6 +362,8 @@ def update_counter(max_count, count):
 def update_state(state):
     try:
         mpc = mpd_client()
+        if mpc is None:
+            return state
     except:
         return state
 
